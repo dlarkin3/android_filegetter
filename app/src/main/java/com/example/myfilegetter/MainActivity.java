@@ -10,13 +10,18 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.coordinatorlayout.widget.CoordinatorLayout;
 
 import android.os.Bundle;
-import android.view.View;
+import android.os.Environment;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.Toast;
 import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -43,12 +48,7 @@ public class MainActivity extends AppCompatActivity {
         mProgressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
         mProgressDialog.setTitle("AsyncTask");
         mProgressDialog.setMessage("Please wait, we are downloading your image file...");
-        button.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                mMyTask = new DownloadTask().execute(stringToURL());
-            }
-        });
+        button.setOnClickListener(view -> mMyTask = new DownloadTask().execute(stringToURL()));
     }
     private class DownloadTask extends AsyncTask<URL,Void,Bitmap>{
         protected void onPreExecute(){
@@ -61,6 +61,15 @@ public class MainActivity extends AppCompatActivity {
                 connection = (HttpURLConnection) url.openConnection();
                 connection.connect();
                 InputStream inputStream = connection.getInputStream();
+
+                File myFile = new File(Environment.getExternalStoragePublicDirectory(
+                        Environment.DIRECTORY_DOWNLOADS), "reds4.jpeg");
+                if(myFile.exists()){
+                    boolean deleted=myFile.delete();
+                }
+                myFile.createNewFile();
+                copyInputStreamToFile(inputStream,myFile);
+
                 BufferedInputStream bufferedInputStream = new BufferedInputStream(inputStream);
                 return BitmapFactory.decodeStream(bufferedInputStream);
             }catch(IOException e){
@@ -68,6 +77,41 @@ public class MainActivity extends AppCompatActivity {
             }
             return null;
         }
+
+        // Copy an InputStream to a File.
+//
+        private void copyInputStreamToFile(InputStream in, File file) {
+            OutputStream out = null;
+
+            try {
+                out = new FileOutputStream(file);
+                byte[] buf = new byte[1024];
+                int len;
+                while((len=in.read(buf))>0){
+                    out.write(buf,0,len);
+                }
+            }
+            catch (Exception e) {
+                e.printStackTrace();
+            }
+            finally {
+                // Ensure that the InputStreams are closed even if there's an exception.
+                try {
+                    if ( out != null ) {
+                        out.close();
+                    }
+
+                    // If you want to close the "in" InputStream yourself then remove this
+                    // from here but ensure that you close it yourself eventually.
+                    in.close();
+                }
+                catch ( IOException e ) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+
         // When all async task done
         protected void onPostExecute(Bitmap result){
             // Hide the progress dialog
@@ -78,11 +122,12 @@ public class MainActivity extends AppCompatActivity {
                 // Notify user that an error occurred while downloading image
                 Toast.makeText(MainActivity.this, "Error", Toast.LENGTH_SHORT).show();
             }
+
         }
     }
     protected URL stringToURL() {
         try {
-            url = new URL("http://10.10.2.37:8000/reds.jpeg");
+            url = new URL("http://10.10.2.37:8000/reds2.jpeg");
             return url;
         } catch (MalformedURLException e) {
             e.printStackTrace();
