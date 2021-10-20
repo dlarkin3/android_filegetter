@@ -56,7 +56,7 @@ public class MainActivity extends AppCompatActivity {
         }
         protected Bitmap doInBackground(URL...urls){
             URL url = urls[0];
-            HttpURLConnection connection = null;
+            HttpURLConnection connection;
             try{
                 connection = (HttpURLConnection) url.openConnection();
                 connection.connect();
